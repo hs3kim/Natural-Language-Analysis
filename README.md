@@ -1,7 +1,7 @@
 
 # Stock NLP
 
-Scrapes daily news about a specified stock and uses Cloud Natural Language API's sentiment analysis to predict the day's stock movement.  
+Scrapes news about specified stocks and uses Cloud Natural Language API's sentiment analysis to predict the stock movement.  
 
 ## Dependencies
 
