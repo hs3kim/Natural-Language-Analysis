@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
 from fake_useragent import UserAgent
-import unicodedata
+import concurrent.futures
 
 ua = UserAgent()
 LOCAL_DT = datetime.now()
@@ -31,14 +31,15 @@ class Stock:
 def create_list(file_name):
     stock_dict = {}
     with open(file_name, "r") as f:
-        for ticker in f:
-            news_titles = scrape_news(ticker.strip(), SCRAPE_NUM_HR)
-            stock_dict[ticker.strip()] = Stock(ticker.strip(), news_titles)
+        ticker_lst = [ticker.strip() for ticker in f]
+        with concurrent.futures.ThreadPoolExecutor() as executer:
+            news_titles = executer.map(scrape_news, ticker_lst)
+            stock_dict = {ticker_lst[i]: Stock(ticker_lst[i], titles) for i, titles in enumerate(news_titles)}
     return stock_dict
 
 
 # Scrapes titles of news articles for a stock
-def scrape_news(stock, num_hr):
+def scrape_news(stock):
     HEADER={'User-Agent': ua.chrome}
 
     url_finviz = "https://finviz.com/quote.ashx?t={}"
@@ -62,7 +63,7 @@ def scrape_news(stock, num_hr):
         news_dt_obj = datetime.strptime(news_dt_str, '%b-%d-%y %I:%M%p')
         
         # Add to list if news were published within the past num_hr
-        if ((LOCAL_DT - timedelta(hours=num_hr)) < news_dt_obj):
+        if ((LOCAL_DT - timedelta(hours=SCRAPE_NUM_HR)) < news_dt_obj):
             news_lst.append(news.find("a").string)
         else:
             break
@@ -70,8 +71,8 @@ def scrape_news(stock, num_hr):
     return news_lst
 
 def main():
-    ticker_dict = create_list("./s&p500_ticker.txt")
-    # print(ticker_dict['AAPL'].news_titles)
+    stock_dict = create_list("./s&p500_ticker.txt")
+    print(stock_dict['AAPL'].news_titles)
 
 if __name__=="__main__":
     main()
