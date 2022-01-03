@@ -6,7 +6,7 @@ import requests
 
 ua = UserAgent()
 LOCAL_DT = datetime.now()
-SCRAPE_NUM_HR = 24
+SCRAPE_NUM_HR = 0
 
 class Stock:
     def __init__(self, ticker, news_titles):
@@ -28,10 +28,11 @@ class Stock:
             return 0
 
 # Initialize Stock objects with ticker symbols and scraped news titles into a dictionary
-def create_list(file_name):
+def create_dict(file_name):
     stock_dict = {}
     with open(file_name, "r") as f:
         ticker_lst = [ticker.strip() for ticker in f]
+        print("[Status] Scraping news titles...")
         # Scrape news titles multi-threadedly
         with concurrent.futures.ThreadPoolExecutor() as executer:
             news_titles = executer.map(scrape_news, ticker_lst)
@@ -71,8 +72,12 @@ def scrape_news(stock):
 
     return news_lst
 
+def set_scrape_t(hours):
+    global SCRAPE_NUM_HR
+    SCRAPE_NUM_HR = hours
+
 def main():
-    stock_dict = create_list("./s&p500_ticker.txt")
+    stock_dict = create_dict("./s&p500_ticker.txt")
     print(stock_dict['AAPL'].news_titles)
 
 if __name__=="__main__":

@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 from google.cloud import language_v1
 from os import makedirs, getenv
 from os.path import isfile, join, basename
-from stock_news_scraper import *
+from stock_news_scraper import LOCAL_DT, create_dict, set_scrape_t
+import concurrent.futures
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,16 +65,14 @@ def get_scrape_time():
             print("Invalid input type")
             continue
         if (int_t > 0 and int_t < 49):
-            return t
+            return int_t
         else:
             print("Number of hours out of bounds.")
 
 def main():
-    global TICKER_DIR
-    global SCRAPE_NUM_HR
-
     TICKER_DIR = get_source_dir()
     SCRAPE_NUM_HR = get_scrape_time()
+    set_scrape_t(SCRAPE_NUM_HR)
 
     print("[Status] Processing input file...")
     stock_dict = create_dict(TICKER_DIR)
