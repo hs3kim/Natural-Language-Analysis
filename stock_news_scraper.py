@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-import requests
 from datetime import datetime, timedelta
 from fake_useragent import UserAgent
 import concurrent.futures
+import requests
 
 ua = UserAgent()
 LOCAL_DT = datetime.now()
@@ -27,18 +27,19 @@ class Stock:
         else:
             return 0
 
-# Initiate Stock objects into a dictionary
+# Initialize Stock objects with ticker symbols and scraped news titles into a dictionary
 def create_list(file_name):
     stock_dict = {}
     with open(file_name, "r") as f:
         ticker_lst = [ticker.strip() for ticker in f]
+        # Scrape news titles multi-threadedly
         with concurrent.futures.ThreadPoolExecutor() as executer:
             news_titles = executer.map(scrape_news, ticker_lst)
             stock_dict = {ticker_lst[i]: Stock(ticker_lst[i], titles) for i, titles in enumerate(news_titles)}
     return stock_dict
 
 
-# Scrapes titles of news articles for a stock
+# Scrape titles of news articles for a stock
 def scrape_news(stock):
     HEADER={'User-Agent': ua.chrome}
 
@@ -62,7 +63,7 @@ def scrape_news(stock):
 
         news_dt_obj = datetime.strptime(news_dt_str, '%b-%d-%y %I:%M%p')
         
-        # Add to list if news were published within the past num_hr
+        # Add to list if news were published within the past SCRAPE_NUM_HR
         if ((LOCAL_DT - timedelta(hours=SCRAPE_NUM_HR)) < news_dt_obj):
             news_lst.append(news.find("a").string)
         else:
