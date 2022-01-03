@@ -1,17 +1,16 @@
 from dotenv import load_dotenv
 from google.cloud import language_v1
+from os import makedirs, getenv
+from os.path import isfile, join, basename
 from stock_news_scraper import *
-import os
 import csv
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 load_dotenv()
 
-ADMIN_JSON_PATH = os.getenv("ADMIN_JSON_PATH")
+ADMIN_JSON_PATH = getenv("ADMIN_JSON_PATH")
 GRAPH_NUM_STOCKS = 30
-TICKER_DIR = "./s&p500_ticker.txt"
-OUTPUT_DIR = "./outputs/"
 
 # Client initiation
 client = language_v1.LanguageServiceClient.from_service_account_json(ADMIN_JSON_PATH)
@@ -36,21 +35,50 @@ def gen_graph(tickers, scores, magnitudes, save_dir):
     f.set_figheight(8)
 
     plt.style.use("fivethirtyeight")
-    plt.bar(x_indexes-width, width=0.25, height=scores, color="goldenrod", label="Score")
-    plt.bar(x_indexes, width=0.25, height=magnitudes, color="mediumseagreen", label="Magnitude")
+    plt.bar(x_indexes - width/2, width=width, height=scores, color="goldenrod", label="Score")
+    plt.bar(x_indexes + width/2, width=width, height=magnitudes, color="mediumseagreen", label="Magnitude")
     plt.legend()
 
     plt.title("Sentiment Score and Magnitude of Stocks")
-    plt.xticks(ticks=x_indexes, labels=tickers)
+    plt.xticks(ticks=x_indexes, labels=tickers, rotation='vertical')
     plt.xlabel("Stocks")
     plt.tight_layout()
 
     plt.savefig(save_dir)
     plt.show()
 
+def get_source_dir():
+    while(True):
+        dir = input("Enter path to source file of ticker symbols:")
+        if (isfile(dir) and dir.endswith(".txt")):
+            return dir
+        else:
+            print("Invalid directory/file format.") 
+
+def get_scrape_time():
+    while(True):
+        t = input("Enter the past number of hours to scrape news from (1~48):")
+        try:
+            int_t = int(t)
+        except ValueError:
+            print("Invalid input type")
+            continue
+        if (int_t > 0 and int_t < 49):
+            return t
+        else:
+            print("Number of hours out of bounds.")
+
 def main():
-    stock_dict = create_list(TICKER_DIR)
+    global TICKER_DIR
+    global SCRAPE_NUM_HR
+
+    TICKER_DIR = get_source_dir()
+    SCRAPE_NUM_HR = get_scrape_time()
+
+    print("[Status] Processing input file...")
+    stock_dict = create_dict(TICKER_DIR)
     
+    print("[Status] Conducting sentiment analysis...")
     for stock in stock_dict.values():
         # Create thread only if list is not empty
         if stock.news_titles:
@@ -60,32 +88,37 @@ def main():
                     stock.total_score += result[0]
                     stock.total_magnitude += result[1]
 
-    desc_score_dict = {k: v for k, v in sorted(stock_dict.items(), key=lambda item: item[1].get_score(), reverse=True)}
+    score_dict_desc = {k: v for k, v in sorted(stock_dict.items(), key=lambda item: item[1].get_score(), reverse=True)}
 
     tickers, scores, magnitudes = [], [], []
-    for ticker, stock in desc_score_dict.items():
+    for ticker, stock in score_dict_desc.items():
         tickers.append(ticker)
         scores.append(stock.get_score())
         magnitudes.append(stock.get_magnitude())
 
-    # Create directory to save output
-    dir_str = LOCAL_DT.strftime("%Y-%m-%d-%H") + f"-{SCRAPE_NUM_HR}HRS"
-    new_output_dir = OUTPUT_DIR + dir_str
-    try:
-        os.mkdir(new_output_dir)
-    except FileExistsError:
-        print("File already exists. Existing data will be overwritten")
+    # Folder to save output for selected input file
+    output_dir = join("./outputs", basename(TICKER_DIR)[:-4])
 
-    # Save generated graph as a png file
-    graph_output_dir = os.path.join(new_output_dir, dir_str) + ".png"
+    # Subfolder in output_dir to save output files
+    subdir_str = LOCAL_DT.strftime("%Y-%m-%d-%H") + f"-{SCRAPE_NUM_HR}hrs"
+
+    # Make directory to save output files
+    full_output_dir = join(output_dir, subdir_str)
+    try:
+        makedirs(full_output_dir)
+    except FileExistsError:
+        print("File already exists. Existing files will be overwritten")
+
+    # Generate and save graph as a png file
+    graph_output_dir = join(full_output_dir, subdir_str) + ".png"
     gen_graph(tickers[0: GRAPH_NUM_STOCKS], scores[0: GRAPH_NUM_STOCKS], magnitudes[0: GRAPH_NUM_STOCKS], graph_output_dir)
 
     # Save scores and magnitudes as a csv file
-    csv_output_dir = os.path.join(new_output_dir, dir_str) + ".csv"
+    csv_output_dir = join(full_output_dir, subdir_str) + ".csv"
     with open(csv_output_dir, "w", newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["ticker", "score", "magnitude"])
-        for ticker, stock in desc_score_dict.items():
+        writer.writerow(["Ticker", "Score", "Magnitude"])
+        for ticker, stock in score_dict_desc.items():
             writer.writerow([ticker, stock.get_score(), stock.get_magnitude()])
     
 if __name__=="__main__":
