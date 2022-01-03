@@ -25,6 +25,26 @@ def analyze_text(text):
     # Magnitude: Strength of emotion (0.0 ~ +inf)
     return sentiment.score, sentiment.magnitude
 
+def gen_graph(tickers, scores, magnitudes):
+    x_indexes = np.arange(len(tickers))
+    width = 0.25
+
+    f = plt.figure()
+    f.set_figwidth(16)
+    f.set_figheight(8)
+
+    plt.style.use("fivethirtyeight")
+    plt.bar(x_indexes-width, width=0.25, height=scores, color="goldenrod", label="Score")
+    plt.bar(x_indexes, width=0.25, height=magnitudes, color="mediumseagreen", label="Magnitude")
+    plt.legend()
+
+    plt.title("Sentiment Score and Magnitude of Stocks")
+    plt.xticks(ticks=x_indexes, labels=tickers)
+    plt.xlabel("Stocks")
+    plt.tight_layout()
+
+    plt.show()
+
 def main():
     stock_dict = create_list("./s&p500_ticker.txt")
     
@@ -37,6 +57,18 @@ def main():
                     stock.total_score += result[0]
                     stock.total_magnitude += result[1]
 
+    desc_score_dict = {k: v for k, v in sorted(stock_dict.items(), key=lambda item: item[1].get_score(), reverse=True)}
+
+    tickers, scores, magnitudes = [], [], []
+    for ticker, stock in desc_score_dict.items():
+        tickers.append(ticker)
+        scores.append(stock.get_score())
+        magnitudes.append(stock.get_magnitude())
+    print(tickers)
+    print(scores)
+    print(magnitudes)
+
+    gen_graph(tickers[0: GRAPH_NUM_STOCKS], scores[0: GRAPH_NUM_STOCKS], magnitudes[0: GRAPH_NUM_STOCKS])
 
 if __name__=="__main__":
     main()
