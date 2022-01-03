@@ -10,6 +10,8 @@ load_dotenv()
 
 ADMIN_JSON_PATH = os.getenv("ADMIN_JSON_PATH")
 GRAPH_NUM_STOCKS = 30
+TICKER_DIR = "./s&p500_ticker.txt"
+OUTPUT_DIR = "./outputs/"
 
 # Client initiation
 client = language_v1.LanguageServiceClient.from_service_account_json(ADMIN_JSON_PATH)
@@ -25,7 +27,7 @@ def analyze_text(text):
     # Magnitude: Strength of emotion (0.0 ~ +inf)
     return sentiment.score, sentiment.magnitude
 
-def gen_graph(tickers, scores, magnitudes):
+def gen_graph(tickers, scores, magnitudes, save_dir):
     x_indexes = np.arange(len(tickers))
     width = 0.25
 
@@ -43,10 +45,11 @@ def gen_graph(tickers, scores, magnitudes):
     plt.xlabel("Stocks")
     plt.tight_layout()
 
+    plt.savefig(save_dir)
     plt.show()
 
 def main():
-    stock_dict = create_list("./s&p500_ticker.txt")
+    stock_dict = create_list(TICKER_DIR)
     
     for stock in stock_dict.values():
         # Create thread only if list is not empty
@@ -64,11 +67,26 @@ def main():
         tickers.append(ticker)
         scores.append(stock.get_score())
         magnitudes.append(stock.get_magnitude())
-    print(tickers)
-    print(scores)
-    print(magnitudes)
 
-    gen_graph(tickers[0: GRAPH_NUM_STOCKS], scores[0: GRAPH_NUM_STOCKS], magnitudes[0: GRAPH_NUM_STOCKS])
+    # Create directory to save output
+    dir_str = LOCAL_DT.strftime("%Y-%m-%d-%H") + f"-{SCRAPE_NUM_HR}HRS"
+    new_output_dir = OUTPUT_DIR + dir_str
+    try:
+        os.mkdir(new_output_dir)
+    except FileExistsError:
+        print("File already exists. Existing data will be overwritten")
 
+    # Save generated graph as a png file
+    graph_output_dir = os.path.join(new_output_dir, dir_str) + ".png"
+    gen_graph(tickers[0: GRAPH_NUM_STOCKS], scores[0: GRAPH_NUM_STOCKS], magnitudes[0: GRAPH_NUM_STOCKS], graph_output_dir)
+
+    # Save scores and magnitudes as a csv file
+    csv_output_dir = os.path.join(new_output_dir, dir_str) + ".csv"
+    with open(csv_output_dir, "w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["ticker", "score", "magnitude"])
+        for ticker, stock in desc_score_dict.items():
+            writer.writerow([ticker, stock.get_score(), stock.get_magnitude()])
+    
 if __name__=="__main__":
     main()
