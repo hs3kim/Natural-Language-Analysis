@@ -27,6 +27,7 @@ def analyze_text(text):
     # Magnitude: Strength of emotion (0.0 ~ +inf)
     return sentiment.score, sentiment.magnitude
 
+
 def gen_graph(tickers, scores, magnitudes, save_dir):
     x_indexes = np.arange(len(tickers))
     width = 0.25
@@ -48,13 +49,15 @@ def gen_graph(tickers, scores, magnitudes, save_dir):
     plt.savefig(save_dir)
     plt.show()
 
+
 def get_source_dir():
     while(True):
         dir = input("Enter path to source file of ticker symbols:")
         if (isfile(dir) and dir.endswith(".txt")):
             return dir
         else:
-            print("Invalid directory/file format.") 
+            print("Invalid directory/file format.")
+
 
 def get_scrape_time():
     while(True):
@@ -69,6 +72,7 @@ def get_scrape_time():
         else:
             print("Number of hours out of bounds.")
 
+
 def main():
     TICKER_DIR = get_source_dir()
     SCRAPE_NUM_HR = get_scrape_time()
@@ -76,7 +80,7 @@ def main():
 
     print("[Status] Processing input file...")
     stock_dict = create_dict(TICKER_DIR)
-    
+
     print("[Status] Conducting sentiment analysis...")
     for stock in stock_dict.values():
         # Create thread only if list is not empty
@@ -119,6 +123,7 @@ def main():
         writer.writerow(["Ticker", "Score", "Magnitude"])
         for ticker, stock in score_dict_desc.items():
             writer.writerow([ticker, stock.get_score(), stock.get_magnitude()])
-    
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()

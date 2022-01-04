@@ -8,6 +8,7 @@ ua = UserAgent()
 LOCAL_DT = datetime.now()
 SCRAPE_NUM_HR = 0
 
+
 class Stock:
     def __init__(self, ticker, news_titles):
         self.ticker = ticker
@@ -27,7 +28,8 @@ class Stock:
         else:
             return 0
 
-# Initialize Stock objects with ticker symbols and scraped news titles into a dictionary
+
+# Initialize Stock objects with ticker symbols and scraped news titles
 def create_dict(file_name):
     stock_dict = {}
     with open(file_name, "r") as f:
@@ -42,7 +44,7 @@ def create_dict(file_name):
 
 # Scrape titles of news articles for a stock
 def scrape_news(stock):
-    HEADER={'User-Agent': ua.chrome}
+    HEADER = {'User-Agent': ua.chrome}
 
     url_finviz = "https://finviz.com/quote.ashx?t={}"
     req = requests.get(url_finviz.format(stock), headers=HEADER)
@@ -67,14 +69,14 @@ def scrape_news(stock):
             news_dt_str = news_date + " " + unparsed_dt[:7]
 
         news_dt_obj = datetime.strptime(news_dt_str, '%b-%d-%y %I:%M%p')
-        
+
         # Add to list if news were published within the past SCRAPE_NUM_HR
         if ((LOCAL_DT - timedelta(hours=SCRAPE_NUM_HR)) < news_dt_obj):
             news_lst.append(news.find("a").string)
         else:
             break
-
     return news_lst
+
 
 def set_scrape_t(hours):
     global SCRAPE_NUM_HR
