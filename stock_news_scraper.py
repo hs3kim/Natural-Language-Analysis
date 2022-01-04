@@ -47,7 +47,11 @@ def scrape_news(stock):
     url_finviz = "https://finviz.com/quote.ashx?t={}"
     req = requests.get(url_finviz.format(stock), headers=HEADER)
     doc = BeautifulSoup(req.text, "html.parser")
-    news_table = doc.find(id='news-table').find_all("tr")
+    try:
+        news_table = doc.find(id='news-table').find_all("tr")
+    except AttributeError:
+        print(f"news-table element not found at URL: {url_finviz.format(stock)}")
+        return []
 
     # Format datetime string
     news_date = None
@@ -75,10 +79,3 @@ def scrape_news(stock):
 def set_scrape_t(hours):
     global SCRAPE_NUM_HR
     SCRAPE_NUM_HR = hours
-
-def main():
-    stock_dict = create_dict("./s&p500_ticker.txt")
-    print(stock_dict['AAPL'].news_titles)
-
-if __name__=="__main__":
-    main()
