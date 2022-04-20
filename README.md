@@ -27,7 +27,7 @@ Set ADMIN_JSON_PATH variable in NL_Analysis.py to be the path to Cloud Authentic
 1. Run NL_Analysis.py
 2. Enter path to the txt file containing a list of ticker symbols to analyze, through console input
 3. Enter the time window to scrape news headlines from, through console input
-4. A csv file and a graph will be generated in the results folder
+4. A csv file and a graph will be generated in the outputs folder
 
 ## Contributing
 
